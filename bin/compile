@@ -40,7 +40,7 @@ fetch_meteor() {
   env
 
   status "Installing meteor Package"
-  curl https://install.meteor.com/ | indent
+  curl https://install.meteor.com/ | sh
 
   status "Updating PATH with METEOR"
   PATH=$HOME/.meteor:$PATH
