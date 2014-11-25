@@ -19,9 +19,9 @@ status() {
 
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
-fetch_meteor() {
-  if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
-    # Skip if meteor is already fetched
+fetch_node() {
+  if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
+    status "Skipping Node installation. Already installed."
     return
   fi
 
@@ -35,6 +35,13 @@ fetch_meteor() {
   mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.vendor/node
   chmod +x $BUILD_DIR/.vendor/node/bin/*
   PATH=$BUILD_DIR/.vendor/node/bin:$PATH
+}
+
+fetch_meteor() {
+  if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
+    status "Skipping Meteor installation. Already installed."
+    return
+  fi
 
   status "Environment is now"
   env
@@ -61,6 +68,7 @@ build() {
 [ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
+fetch_node
 fetch_meteor
 build
 
