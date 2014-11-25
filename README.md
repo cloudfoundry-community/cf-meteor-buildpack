@@ -1,12 +1,15 @@
-# Cloud Foundry Meteor Buildpack
+Cloud Foundry Meteor Buildpack
+==============================
 
-## Usage
+Usage
+-----
 
 ```
 % cf push <appname> -b https://github.com/csterwa/cf-meteor-buildpack.git
 ```
 
-## Example
+Example
+-------
 
 Create a sample app with 'meteor'
 
@@ -26,7 +29,4 @@ Push your Cloud Foundry app
 ```
 
 Enjoy!
-=======
-cf-meteor-buildpack
-===================
-
+======
