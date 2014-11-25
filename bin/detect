@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -f $1/.meteor/release ]; then
+  echo "Meteor" && exit 0
+else
+  echo "no" && exit 1
+fi
