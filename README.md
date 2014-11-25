@@ -1,9 +1,9 @@
-# Cloud Foundry buildpack for Meteor 0.9.0+
+# Cloud Foundry Meteor Buildpack
 
 ## Usage
 
 ```
-% cf push <appname> -b https://github.com/rajit/heroku-buildpack-meteor.git
+% cf push <appname> -b https://github.com/csterwa/cf-meteor-buildpack.git
 ```
 
 ## Example
@@ -26,3 +26,7 @@ Push your Cloud Foundry app
 ```
 
 Enjoy!
+=======
+cf-meteor-buildpack
+===================
+
