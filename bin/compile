@@ -51,7 +51,7 @@ fetch_meteor() {
   sed -e '/^#!\/bin\/sh/ s/$/ -x/' \
     -e 's/set -/#set -/' \
     -e 's/# bomb out if.*/echo "downloaded: "; ls -l $INSTALL_TMPDIR/' \
-    -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xvzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
+    -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
     $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
   chmod +x install-meteor-verbose.sh
 
