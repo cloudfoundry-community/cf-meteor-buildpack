@@ -5,22 +5,6 @@ CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
 PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
 
-[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
-[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
-
-fetch_node
-fetch_meteor
-build
-
-status "Checking for post_compile script"
-if [ -f $BUILD_DIR/bin/post_compile ] ; then
-    status "Running post_compile hook"
-    chmod +x $BUILD_DIR/bin/post_compile
-    $BUILD_DIR/bin/post_compile
-fi
-
-private
-
 indent() {
   c='s/^/       /'
   case $(uname) in
@@ -84,3 +68,17 @@ build() {
     mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
   )
 }
+
+[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
+[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
+
+fetch_node
+fetch_meteor
+build
+
+status "Checking for post_compile script"
+if [ -f $BUILD_DIR/bin/post_compile ] ; then
+    status "Running post_compile hook"
+    chmod +x $BUILD_DIR/bin/post_compile
+    $BUILD_DIR/bin/post_compile
+fi
