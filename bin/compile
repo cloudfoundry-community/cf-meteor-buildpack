@@ -47,7 +47,7 @@ fetch_meteor() {
   METEOR_INSTALL_SCRIPT=install_meteor.sh
   curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
 
-  status "Installing Meteor"
+  status "Installing Meteor connected to $MONGO_URL"
   chmod +x $METEOR_INSTALL_SCRIPT
   status "Ready to run ./$METEOR_INSTALL_SCRIPT"
   ./$METEOR_INSTALL_SCRIPT
