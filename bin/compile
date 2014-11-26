@@ -5,80 +5,48 @@ CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
 PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
 
-indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";; # mac/bsd sed: -l buffers on line boundaries
-    *)      sed -u "$c";; # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
-  esac
-}
-
-status() {
-  echo "-----> $*"
-}
-
-node_version=$(curl --silent --get https://semver.io/node/resolve)
-
-fetch_node() {
-  if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
-    status "Skipping Node installation. Already installed."
-    return
-  fi
-
-  # Download node from Heroku's S3 mirror of nodejs.org/dist
-  status "Downloading and installing node $node_version"
-  NODE_URL="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
-  curl $NODE_URL -s -o - | tar xzf - -C $BUILD_DIR
-
-  # Move node (and npm) into ./.vendor and make them executable
-  mkdir -p $BUILD_DIR/.vendor
-  mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.vendor/node
-  chmod +x $BUILD_DIR/.vendor/node/bin/*
-  PATH=$BUILD_DIR/.vendor/node/bin:$PATH
-}
+# Unfortunately heroku buildpacks don't let you pass parameters
+# to this script, so if you want to change the version of meteor,
+# you'll have to fork and hard-code this.
+METEOR_VERSION=1.0.0
 
 fetch_meteor() {
   if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
-    status "Skipping Meteor installation. Already installed."
+    # Skip if meteor is already fetched
     return
   fi
 
-  status "Downloading Meteor install script"
-  METEOR_INSTALL_SCRIPT=install_meteor.sh
-  curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
 
-  status "Installing Meteor"
-  chmod +x $METEOR_INSTALL_SCRIPT
-  status "Ready to run ./$METEOR_INSTALL_SCRIPT"
-  ./$METEOR_INSTALL_SCRIPT
-  status "Done"
+  PACKAGE=meteor_${METEOR_VERSION}-1_amd64.deb
 
-  status "Updating PATH with Meteor"
-  PATH=$HOME/.meteor:$PATH
+  echo "Fetching meteor deb package"
+  curl -o "$CACHE_DIR/$PACKAGE" "http://d3sqy0vbqsdhku.cloudfront.net/${PACKAGE}"
+
+  echo "Unpacking meteor"
+  [ ! -d "$METEOR_HOME" ] && mkdir -p "$METEOR_HOME"
+  ar p "$CACHE_DIR/$PACKAGE" data.tar.gz | tar -C "$METEOR_HOME" -zxf -
 }
 
 build() {
   (
     cd $BUILD_DIR
-    status "Building meteor bundle"
-    meteor build --directory deploy 2>&1 | indent
-    cd deploy/bundle/programs/server
-    status "Installing npm dependencies"
-    npm install 2>&1 | indent
-    mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
+    echo "Building meteor bundle"
+    meteor bundle $CACHE_DIR/bundle.tar.gz
+    mkdir -p $BUILD_DIR/.meteor/local/build
+    tar -zxf $CACHE_DIR/bundle.tar.gz --strip-components 1 -C $BUILD_DIR/.meteor/local/build
+    rm $CACHE_DIR/bundle.tar.gz
   )
 }
 
 [ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
-fetch_node
 fetch_meteor
 build
 
-status "Checking for post_compile script"
+echo "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
-    status "Running post_compile hook"
+    echo "-----> Running post_compile hook"
     chmod +x $BUILD_DIR/bin/post_compile
     $BUILD_DIR/bin/post_compile
 fi
