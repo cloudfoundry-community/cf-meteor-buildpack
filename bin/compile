@@ -5,6 +5,22 @@ CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
 PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
 
+[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
+[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
+
+fetch_node
+fetch_meteor
+build
+
+status "Checking for post_compile script"
+if [ -f $BUILD_DIR/bin/post_compile ] ; then
+    status "Running post_compile hook"
+    chmod +x $BUILD_DIR/bin/post_compile
+    $BUILD_DIR/bin/post_compile
+fi
+
+private
+
 indent() {
   c='s/^/       /'
   case $(uname) in
@@ -43,18 +59,17 @@ fetch_meteor() {
     return
   fi
 
-  status "Environment is now"
-  env
-
   status "Downloading Meteor install script"
   METEOR_INSTALL_SCRIPT=install_meteor.sh
   curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
 
   status "Installing Meteor"
   chmod +x $METEOR_INSTALL_SCRIPT
+  status "Ready to run ./$METEOR_INSTALL_SCRIPT"
   ./$METEOR_INSTALL_SCRIPT
+  status "Done"
 
-  status "Updating PATH with METEOR"
+  status "Updating PATH with Meteor"
   PATH=$HOME/.meteor:$PATH
 }
 
@@ -69,17 +84,3 @@ build() {
     mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
   )
 }
-
-[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
-[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
-
-fetch_node
-fetch_meteor
-build
-
-status "Checking for post_compile script"
-if [ -f $BUILD_DIR/bin/post_compile ] ; then
-    status "Running post_compile hook"
-    chmod +x $BUILD_DIR/bin/post_compile
-    $BUILD_DIR/bin/post_compile
-fi
