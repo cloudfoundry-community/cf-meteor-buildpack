@@ -39,7 +39,7 @@ System-Provided:
 % cf set-env wordplay MONGO_URL <mongodb-2.2 url from above>
 
 % cf domains
-Getting domains in org cs-home as chris.sterling@gmail.com...
+Getting domains in org cs-home as <username>...
 name                  status
 <CF Domain URL>       shared
 
@@ -58,8 +58,45 @@ ROOT_URL: http://wordplay.<CF Domain URL>
 
 ##Push your Cloud Foundry app
 
-Once we have the environment variables set then we can just push our app using the cf-meteor-buildpack.
+Once we have the environment variables set then we can make an initial push of our app using the cf-meteor-buildpack.
 
 ```
 % cf push wordplay -b https://github.com/csterwa/cf-meteor-buildpack.git
 ```
+
+This will not start successfully since we have not bound a Mongo service to our app. To bind a Mongo service to our app we will look into the Cloud Foundry marketplace, create a mongo service instance and then bind that instance to our app.
+
+```
+% cf marketplace
+Getting services from marketplace in org cs-home / space development as <username>...
+OK
+
+service   plans   description
+mongodb   free    MongoDB NoSQL database
+
+% cf create-service mongodb free wordplay-mongodb
+Creating service wordplay-mongodb in org cs-home / space development as <username>...
+OK
+
+% cf services
+Getting services in org cs-home / space development as <username>...
+OK
+
+name               service   plan   bound apps
+wordplay-mongodb   mongodb   free
+
+% cf bind-service wordplay wordplay-mongodb
+Binding service wordplay-mongodb to app wordplay in org <org> / space development as <username>...
+OK
+TIP: Use 'cf restage' to ensure your env variable changes take effect
+
+% cf restage wordplay
+Restaging app wordplay in org <org> / space development as <username>...
+...
+1 of 1 instances running
+
+App started
+...
+```
+
+Now the wordplay app should be running on Cloud Foundry.
