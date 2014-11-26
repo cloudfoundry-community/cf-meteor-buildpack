@@ -35,8 +35,15 @@ System-Provided:
   ]
  }
 }
+
 % cf set-env wordplay MONGO_URL <mongodb-2.2 url from above>
-% cf set-env wordplay ROOT_URL http://wordplay.<CF API URL>
+
+% cf domains
+Getting domains in org cs-home as chris.sterling@gmail.com...
+name                  status
+<CF Domain URL>       shared
+
+% cf set-env wordplay ROOT_URL http://wordplay.<CF Domain URL>
 ```
 
 To verify you set the environment variables for the app, run the `cf env` command again and look for the "User-Provided" section.
@@ -46,7 +53,7 @@ To verify you set the environment variables for the app, run the `cf env` comman
 ...
 User-Provided:
 MONGO_URL: <mongodb-2.2 url from above>
-ROOT_URL: http://wordplay.<CF API URL>
+ROOT_URL: http://wordplay.<CF Domain URL>
 ```
 
 ##Push your Cloud Foundry app
