@@ -1,84 +1,208 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# bin/compile <build-dir> <cache-dir>
+PATH="$HOME/.meteor":$PATH
+# fail fast
+set -e
 
+# debug
+# set -x
+
+# clean up leaking environment
+unset GIT_DIR
+
+# config
+SCONS_VERSION="1.2.0"
+S3_BUCKET="heroku-buildpack-nodejs"
+
+# parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
-METEOR_HOME=$BUILD_DIR/.meteor/local
-PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
-
-indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";; # mac/bsd sed: -l buffers on line boundaries
-    *)      sed -u "$c";; # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
-  esac
-}
-
-status() {
-  echo "-----> $*"
-}
-
-node_version=$(curl --silent --get https://semver.io/node/resolve)
-
-fetch_node() {
-  if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
-    status "Skipping Node installation. Already installed."
-    return
-  fi
-
-  # Download node from Heroku's S3 mirror of nodejs.org/dist
-  status "Downloading and installing node $node_version"
-  NODE_URL="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
-  curl $NODE_URL -s -o - | tar xzf - -C $BUILD_DIR
-
-  # Move node (and npm) into ./.vendor and make them executable
-  mkdir -p $BUILD_DIR/.vendor
-  mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.vendor/node
-  chmod +x $BUILD_DIR/.vendor/node/bin/*
-  PATH=$BUILD_DIR/.vendor/node/bin:$PATH
-}
-
-fetch_meteor() {
-  if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
-    status "Skipping Meteor installation. Already installed."
-    return
-  fi
-
-  status "Downloading Meteor install script"
-  METEOR_INSTALL_SCRIPT=install_meteor.sh
-  curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
-
-  status "Installing Meteor"
-  chmod +x $METEOR_INSTALL_SCRIPT
-  status "Ready to run ./$METEOR_INSTALL_SCRIPT"
-  ./$METEOR_INSTALL_SCRIPT
-  status "Done"
-
-  status "Updating PATH with Meteor"
-  PATH=$HOME/.meteor:$PATH
-}
-
-build() {
-  (
-    cd $BUILD_DIR
-    status "Building meteor bundle"
-    meteor build --directory deploy 2>&1 | indent
-    cd deploy/bundle/programs/server
-    status "Installing npm dependencies"
-    npm install 2>&1 | indent
-    mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
-  )
-}
+LP_DIR=`cd $(dirname $0); cd ..; pwd`
 
 [ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
-fetch_node
-fetch_meteor
-build
+function error() {
+  echo " !     $*"
+  exit 1
+}
 
-status "Checking for post_compile script"
-if [ -f $BUILD_DIR/bin/post_compile ] ; then
-    status "Running post_compile hook"
-    chmod +x $BUILD_DIR/bin/post_compile
-    $BUILD_DIR/bin/post_compile
+function mktmpdir() {
+  dir=$(mktemp -t node-$1-XXXX)
+  rm -rf $dir
+  mkdir -p $dir
+  echo $dir
+}
+
+function indent() {
+  c='s/^/       /'
+  case $(uname) in
+    Darwin) sed -l "$c";;
+    *)      sed -u "$c";;
+  esac
+}
+
+function run_npm() {
+  command="$1"
+
+  cd "$BUILD_DIR"
+  HOME="$BUILD_DIR" $VENDORED_NODE/bin/node $VENDORED_NODE/bin/npm $command 2>&1 | indent
+
+  if [ "${PIPESTATUS[*]}" != "0 0" ]; then
+    echo " !     Failed to $command dependencies with npm"
+    exit 1
+  fi
+}
+
+function manifest_versions() {
+  curl "http://${S3_BUCKET}.s3.amazonaws.com/manifest.${1}" -s -o - | tr -s '\n' ' '
+}
+
+function resolve_version() {
+  available_versions="$1"
+  requested_version="$2"
+  default_version="$3"
+
+  if [ "$2" == "" ]; then
+    echo $3
+  else
+    args=""
+    for version in $available_versions; do args="${args} -v \"${version}\""; done
+    for version in $requested_version; do args="${args} -r \"${version}\""; done
+    eval $bootstrap_node/bin/node $LP_DIR/vendor/node-semver/bin/semver ${args} | tail -n1
+  fi
+}
+
+function package_engine_version() {
+  version=$(cat $BUILD_DIR/package.json | $bootstrap_node/bin/node $LP_DIR/vendor/json/json engines.$1 2>/dev/null)
+  if [ $? == 0 ]; then
+    echo $version | sed -e 's/\([<>=]\) /\1/g'
+  fi
+}
+
+function package_resolve_version() {
+  engine="$1"
+  resolved_version=$(resolve_version "${engine_versions[$engine]}" "${engine_requests[$engine]}" "${engine_defaults[$engine]}")
+
+  if [ "${resolved_version}" == "" ]; then
+    error "Requested engine $engine version ${engine_requests[$engine]} does not match available versions: ${engine_versions[$engine]}"
+  else
+    echo $resolved_version
+  fi
+}
+
+function package_download() {
+  engine="$1"
+  version="$2"
+  location="$3"
+
+  mkdir -p $location
+  package="http://${S3_BUCKET}.s3.amazonaws.com/$engine-$version.tgz"
+  curl $package -s -o - | tar xzf - -C $location
+}
+
+bootstrap_node=$(mktmpdir bootstrap_node)
+package_download "nodejs" "0.4.7" $bootstrap_node
+
+# make some associative arrays
+declare -A engine_versions
+declare -A engine_defaults
+declare -A engine_requests
+
+engine_defaults["node"]="0.8.19"
+engine_versions["node"]=$(manifest_versions "nodejs")
+engine_requests["node"]=$(package_engine_version "node")
+
+echo "-----> Resolving engine versions"
+
+# add a warning if no version of node specified
+if [ "${engine_requests["node"]}" == "" ]; then
+  echo
+  echo "WARNING: No version of Node.js specified in package.json, see:" | indent
+  echo "https://devcenter.heroku.com/articles/nodejs-versions" | indent
+  echo
 fi
+
+NODE_VERSION=$(package_resolve_version "node")
+echo "Using Node.js version: ${NODE_VERSION}" | indent
+
+# cache directories
+CACHE_STORE_DIR="$CACHE_DIR/node_modules/$NODE_VERSION"
+CACHE_TARGET_DIR="$BUILD_DIR/node_modules"
+
+# s3 packages
+NODE_PACKAGE="http://${S3_BUCKET}.s3.amazonaws.com/nodejs-${NODE_VERSION}.tgz"
+SCONS_PACKAGE="http://${S3_BUCKET}.s3.amazonaws.com/scons-${SCONS_VERSION}.tgz"
+
+# vendor directories
+VENDORED_NODE="$(mktmpdir node)"
+VENDORED_SCONS="$(mktmpdir scons)"
+VENDORED_MODULES="$(mktmpdir modules)"
+
+# download and unpack packages
+echo "-----> Fetching Node.js binaries"
+package_download "nodejs" "${NODE_VERSION}" "${VENDORED_NODE}"
+package_download "scons" "${SCONS_VERSION}" "${VENDORED_SCONS}"
+
+# setting up paths for building
+PATH="$VENDORED_SCONS:$VENDORED_NODE/bin:$VENDORED_MODULES/bin:$PATH"
+INCLUDE_PATH="$VENDORED_NODE/include"
+export npm_config_prefix="$VENDORED_MODULES"
+export CPATH="$INCLUDE_PATH"
+export CPPPATH="$INCLUDE_PATH"
+
+## TODO -- figure out which node dependencies need to be installed
+# # install dependencies with npm
+# echo "-----> Installing dependencies with npm"
+# run_npm "install --production"
+# run_npm "rebuild"
+# echo "Dependencies installed" | indent
+
+############################################
+# install meteorite
+############################################
+echo "-----> Installing meteorite with npm"
+
+run_npm "install meteorite -g"
+echo "Meteorite installed" | indent
+
+METEOR_BUILD_DIR="$BUILD_DIR/.meteor/heroku_build"
+mkdir -p "$HOME"
+############################################
+# install meteor + packages through mrt
+# bundle, and install into app/
+############################################
+cd $BUILD_DIR
+echo "Installing meteor" | indent
+
+# Using different folder to prevent install script form deleting packages file
+VENDORED_METEOR="$(mktmpdir meteor)"
+curl https://install.meteor.com | HOME="$VENDORED_METEOR" /bin/sh | indent
+echo "Meteor installed" | indent
+
+echo "Installing packages" | indent
+HOME="$BUILD_DIR" mrt install | indent
+echo "Building meteor bundle" | indent
+HOME="$VENDORED_METEOR" mrt bundle "$CACHE_DIR"/bundle.tar.gz 2>&1 | indent
+
+mkdir -p "$METEOR_BUILD_DIR"/app
+tar -zxf "$CACHE_DIR"/bundle.tar.gz --strip-components 1 -C "$METEOR_BUILD_DIR"/app
+rm "$CACHE_DIR"/bundle.tar.gz
+############################################
+
+############################################
+# Prepare ENV vars
+############################################
+echo "Setting up MONGO_URL in .profile.d"
+mkdir -p "$BUILD_DIR"/.profile.d
+cat > "$BUILD_DIR"/.profile.d/mongo.sh <<EOF
+  #!/bin/sh
+
+  export MONGO_URL=\${MONGO_URL:-\$MONGOHQ_URL};
+EOF
+
+# vendor node into the slug
+PATH="$METEOR_BUILD_DIR/bin:$PATH"
+echo "-----> Vendoring node into slug"
+mkdir -p "$METEOR_BUILD_DIR/bin"
+cp "$VENDORED_NODE/bin/node" "$METEOR_BUILD_DIR/bin/node"
