@@ -60,9 +60,6 @@ fetch_meteor() {
 
   status "Updating PATH with Meteor"
   PATH=$HOME/.meteor:$PATH
-
-  status "Environment:"
-  env
 }
 
 build() {
