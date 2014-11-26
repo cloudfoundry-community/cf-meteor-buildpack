@@ -48,10 +48,11 @@ fetch_meteor() {
   curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
 
   status "Installing Meteor connected to $MONGO_URL"
-  chmod +x $METEOR_INSTALL_SCRIPT
-  set -o verbose
-  status "Execute ./$METEOR_INSTALL_SCRIPT"
-  ./$METEOR_INSTALL_SCRIPT
+  sed '/^#!\/bin\/sh/ s/$/ -x/' $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
+  chmod +x install-meteor-verbose.sh
+
+  status "Execute ./install-meteor-verbose.sh"
+  ./install-meteor-verbose.sh
   status "Done"
 
   status "Updating PATH with Meteor"
