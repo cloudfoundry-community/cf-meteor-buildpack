@@ -48,7 +48,7 @@ fetch_meteor() {
   curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
 
   status "Installing Meteor connected to $MONGO_URL"
-  sed -e '/^#!\/bin\/sh/ s/$/ -x/' -e 's/set -/#set -/' $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
+  sed -e '/^#!\/bin\/sh/ s/$/ -x/' -e 's/set -/#set -/' -e '/^# bomb out if/ s//echo "downloaded: "; ls -l $INSTALL_TMPDIR/' $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
   chmod +x install-meteor-verbose.sh
 
   status "Execute ./install-meteor-verbose.sh"
