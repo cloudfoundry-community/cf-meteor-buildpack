@@ -63,6 +63,3 @@ Once we have the environment variables set then we can just push our app using t
 ```
 % cf push wordplay -b https://github.com/csterwa/cf-meteor-buildpack.git
 ```
-
-Enjoy!
-======
