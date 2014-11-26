@@ -1,17 +1,7 @@
 Cloud Foundry Meteor Buildpack
 ==============================
 
-Usage
------
-
-```
-% cf push <appname> -b https://github.com/csterwa/cf-meteor-buildpack.git
-```
-
-Example
--------
-
-Create a sample app with 'meteor'
+##Create a sample app with 'meteor'
 
 ```
 % meteor create --example wordplay
@@ -22,7 +12,46 @@ To run your new app:
    meteor
 ```
 
-Push your Cloud Foundry app
+##Workaround For Now (Ugh)
+
+Until scripts pull VCAP_SERVICES data (MongoDB URL and app URI), we must set specific environment variables for the Meteor app to start.
+
+```
+% cf env wordplay
+...
+System-Provided:
+{
+ "VCAP_SERVICES": {
+  "mongodb-2.2": [
+   {
+    "credentials": {
+     "db": "db",
+     ...
+     "url": "mongodb://<guid-user-id>@<ip address>:<port>/db",
+     ...
+    },
+    ...
+   }
+  ]
+ }
+}
+% cf set-env wordplay MONGO_URL <mongodb-2.2 url from above>
+% cf set-env wordplay ROOT_URL http://wordplay.<CF API URL>
+```
+
+To verify you set the environment variables for the app, run the `cf env` command again and look for the "User-Provided" section.
+
+```
+% cf env wordplay
+...
+User-Provided:
+MONGO_URL: <mongodb-2.2 url from above>
+ROOT_URL: http://wordplay.<CF API URL>
+```
+
+##Push your Cloud Foundry app
+
+Once we have the environment variables set then we can just push our app using the cf-meteor-buildpack.
 
 ```
 % cf push wordplay -b https://github.com/csterwa/cf-meteor-buildpack.git
