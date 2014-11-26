@@ -49,7 +49,8 @@ fetch_meteor() {
 
   status "Installing Meteor connected to $MONGO_URL"
   chmod +x $METEOR_INSTALL_SCRIPT
-  status "Ready to run ./$METEOR_INSTALL_SCRIPT"
+  set -o verbose
+  status "Execute ./$METEOR_INSTALL_SCRIPT"
   ./$METEOR_INSTALL_SCRIPT
   status "Done"
 
