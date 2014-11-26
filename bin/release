@@ -4,9 +4,6 @@ BUILD_DIR=$1
 
 cat <<-YAML
 ---
-addons:
-  - mongolab
-config_vars:
 default_process_types:
-  web: MONGO_URL=\$MONGOLAB_URI vendor/node/bin/node deploy/bundle/main.js
+  web: vendor/node/bin/node deploy/bundle/main.js
 YAML
