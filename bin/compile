@@ -38,10 +38,9 @@ install_node() {
 }
 
 extract_mongo_url() {
-  status "env is"
-  env
-
-  MONGO_URL=`grep -Po 'mongodb://.*?[^\\]",' $VCAP_SERVICES`
+  MONGO_CONFIG=`$VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2"`
+  MONGO_CREDS=`$MONGO_CONFIG | sed -e 's/[{}]/''/g' | awk -v k="credentials"`
+  MONGO_URL=`$MONGO_CREDS | sed -e 's/[{}]/''/g' | awk -v k="url"`
   status "MONGO_URL: $MONGO_URL"
 }
 
