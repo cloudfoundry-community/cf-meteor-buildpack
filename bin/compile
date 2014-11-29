@@ -19,7 +19,7 @@ status() {
 
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
-fetch_node() {
+install_node() {
   if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
     status "Skipping Node installation. Already installed."
     return
@@ -37,7 +37,15 @@ fetch_node() {
   PATH=$BUILD_DIR/.vendor/node/bin:$PATH
 }
 
-fetch_meteor() {
+extract_mongo_url() {
+  status "env is"
+  status env
+
+  MONGO_URL=`grep -Po '"mongodb://.*?[^\\]",' $VCAP_SERVICES`
+  status "MONGO_URL: $MONGO_URL"
+}
+
+install_meteor() {
   if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
     status "Skipping Meteor installation. Already installed."
     return
@@ -66,8 +74,9 @@ build() {
 [ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
-fetch_node
-fetch_meteor
+install_node
+extract_mongo_url
+install_meteor
 build
 
 status "Checking for post_compile script"
