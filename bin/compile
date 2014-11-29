@@ -39,9 +39,9 @@ install_node() {
 
 extract_mongo_url() {
   status "env is"
-  status env
+  env
 
-  MONGO_URL=`grep -Po '"mongodb://.*?[^\\]",' $VCAP_SERVICES`
+  MONGO_URL=`grep -Po 'mongodb://.*?[^\\]",' $VCAP_SERVICES`
   status "MONGO_URL: $MONGO_URL"
 }
 
