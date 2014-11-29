@@ -44,19 +44,22 @@ fetch_meteor() {
   fi
 
   status "Downloading Meteor install script"
-  METEOR_INSTALL_SCRIPT=install_meteor.sh
-  curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
-
-  status "Installing Meteor connected to $MONGO_URL"
-  sed -e '/^#!\/bin\/sh/ s/$/ -x/' \
-    -e 's/set -/#set -/' \
-    -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
-    $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
-  chmod +x install-meteor-verbose.sh
-
-  status "Execute ./install-meteor-verbose.sh"
-  ./install-meteor-verbose.sh
-  status "Done"
+  export PATH=/usr/bin:$PATH
+  curl https://install.meteor.com | sh
+  
+  # METEOR_INSTALL_SCRIPT=install_meteor.sh
+  # curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
+  #
+  # status "Installing Meteor connected to $MONGO_URL"
+  # sed -e '/^#!\/bin\/sh/ s/$/ -x/' \
+  #   -e 's/set -/#set -/' \
+  #   -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
+  #   $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
+  # chmod +x install-meteor-verbose.sh
+  #
+  # status "Execute ./install-meteor-verbose.sh"
+  # ./install-meteor-verbose.sh
+  # status "Done"
 
   status "Updating PATH with Meteor"
   PATH=$HOME/.meteor:$PATH
