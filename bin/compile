@@ -41,7 +41,7 @@ install_node() {
 
 extract_mongo_url() {
   status "VCAP_SERVICES: $VCAP_SERVICES"
-  MONGO_URL=`echo $VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep url | cut -d']' -f 1 | sed -e "s/url://g"`
+  MONGO_URL=`echo $VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep url | cut -d']' -f 1 | sed -e "s/url://g"  | cut -d'"' -f 4`
   status "MONGO_URL: $MONGO_URL"
 }
 
