@@ -3,7 +3,7 @@
 BUILD_DIR=$1
 CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
-PATH=/usr/bin:$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
+PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
 
 indent() {
   c='s/^/       /'
@@ -52,6 +52,7 @@ install_meteor() {
   fi
 
   status "Install Meteor"
+  export PATH=/usr/bin:$PATH # necessary for install script to run from URL
   curl https://install.meteor.com | sh
 
   status "Updating PATH with Meteor"
