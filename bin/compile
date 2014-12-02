@@ -41,7 +41,7 @@ install_node() {
 
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
-  MONGO_URL=`echo $VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep url | cut -d']' -f 1 | sed -e "s/url://g"  | cut -d'"' -f 4`
+  export MONGO_URL=`echo $VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep url | cut -d']' -f 1 | sed -e "s/url://g"  | cut -d'"' -f 4`
   status "MONGO_URL: $MONGO_URL"
 }
 
@@ -51,9 +51,23 @@ install_meteor() {
     return
   fi
 
-  status "Install Meteor"
-  export PATH=/usr/bin:$PATH # necessary for install script to run from URL
-  curl https://install.meteor.com | sh
+  # status "Install Meteor"
+  # export PATH=/usr/bin:$PATH # necessary for install script to run from URL
+  # curl https://install.meteor.com | sh
+  status "Downloading Meteor install script"
+  METEOR_INSTALL_SCRIPT=install_meteor.sh
+  curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
+
+  status "Installing Meteor connected to $MONGO_URL"
+  sed -e '/^#!\/bin\/sh/ s/$/ -x/' \
+    -e 's/set -/#set -/' \
+    -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
+    $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
+  chmod +x install-meteor-verbose.sh
+
+  status "Execute ./install-meteor-verbose.sh"
+  ./install-meteor-verbose.sh
+  status "Done"
 
   status "Updating PATH with Meteor"
   PATH=$HOME/.meteor:$PATH
