@@ -17,8 +17,8 @@ status() {
   echo "-----> $*"
 }
 
-PWD=`pwd`
-jq=$PWD/jq
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+jq=$DIR/jq
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
 install_node() {
@@ -42,13 +42,13 @@ install_node() {
 }
 
 extract_mongo_url() {
-  status "Pulling MONGO_URL from VCAP_SERVICES"
+  status "Pulling MONGO_URL from VCAP_SERVICES using $jq"
   export MONGO_URL=`echo $VCAP_SERVICES | $jq '.VCAP_SERVICES."mongodb-2.2"[0].credentials.url'`
   status "MONGO_URL: $MONGO_URL"
 }
 
 extract_root_url() {
-  status "Pulling ROOT_URL from VCAP_APPLICATION"
+  status "Pulling ROOT_URL from VCAP_APPLICATION using $jq"
   export ROOT_URL=`echo $VCAP_APPLICATION | $jq '.VCAP_APPLICATION.uris[0]'`
   status "ROOT_URL: $ROOT_URL"
 }
