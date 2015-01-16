@@ -6,6 +6,10 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 jq=$DIR/jq
 chmod +x $jq
 
+status() {
+  echo "-----> $*"
+}
+
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
   export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url' | sed -e 's/^"//'  -e 's/"$//'`
