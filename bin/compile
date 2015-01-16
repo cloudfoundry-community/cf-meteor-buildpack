@@ -19,7 +19,6 @@ status() {
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 jq=$DIR/jq
-echo "jq is at $jq"
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
 install_node() {
@@ -44,13 +43,13 @@ install_node() {
 
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | bash jq '.VCAP_SERVICES."mongodb-2.2"[0].credentials.url'`
+  export MONGO_URL=`echo $VCAP_SERVICES | bash $jq '.VCAP_SERVICES."mongodb-2.2"[0].credentials.url'`
   status "MONGO_URL: $MONGO_URL"
 }
 
 extract_root_url() {
   status "Pulling ROOT_URL from VCAP_APPLICATION"
-  export ROOT_URL=`echo $VCAP_APPLICATION | bash jq '.VCAP_APPLICATION.uris[0]'`
+  export ROOT_URL=`echo $VCAP_APPLICATION | bash $jq '.VCAP_APPLICATION.uris[0]'`
   status "ROOT_URL: $ROOT_URL"
 }
 install_meteor() {
