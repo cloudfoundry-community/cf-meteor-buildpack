@@ -50,7 +50,8 @@ extract_mongo_url() {
 
 extract_root_url() {
   status "Pulling ROOT_URL from VCAP_APPLICATION"
-  export ROOT_URL=`echo $VCAP_APPLICATION | $jq '.uris[0]'`
+  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]'`
+  export ROOT_URL="http://$DOMAIN"
   status "ROOT_URL: $ROOT_URL"
 }
 install_meteor() {
