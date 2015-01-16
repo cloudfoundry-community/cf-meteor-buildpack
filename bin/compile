@@ -44,13 +44,13 @@ install_node() {
 
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url'`
+  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url' | sed -e 's/^"//'  -e 's/"$//'`
   status "MONGO_URL: $MONGO_URL"
 }
 
 extract_root_url() {
   status "Pulling ROOT_URL from VCAP_APPLICATION"
-  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]'`
+  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
   export ROOT_URL="http://$DOMAIN"
   status "ROOT_URL: $ROOT_URL"
 }
