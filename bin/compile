@@ -41,13 +41,13 @@ install_node() {
 
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`./jq .VCAP_SERVICES."mongodb-2.2"[0].credentials.url`
+  export MONGO_URL=`echo $VCAP_SERVICES | jq '.VCAP_SERVICES."mongodb-2.2"[0].credentials.url'`
   status "MONGO_URL: $MONGO_URL"
 }
 
 extract_root_url() {
   status "Pulling ROOT_URL from VCAP_APPLICATION"
-  export ROOT_URL=`./jq .VCAP_APPLICATION.uris[0]`
+  export ROOT_URL=`echo $VCAP_APPLICATION | jq '.VCAP_APPLICATION.uris[0]'`
   status "ROOT_URL: $ROOT_URL"
 }
 install_meteor() {
