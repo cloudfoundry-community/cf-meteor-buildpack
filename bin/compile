@@ -41,10 +41,15 @@ install_node() {
 
 extract_mongo_url() {
   status "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | sed -e 's/[{}]/''/g' | awk -v k="mongodb-2.2" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}' | grep url | cut -d']' -f 1 | sed -e "s/url://g"  | cut -d'"' -f 4`
+  export MONGO_URL=`./jq .VCAP_SERVICES."mongodb-2.2"[0].credentials.url`
   status "MONGO_URL: $MONGO_URL"
 }
 
+extract_root_url() {
+  status "Pulling ROOT_URL from VCAP_APPLICATION"
+  export ROOT_URL=`./jq .VCAP_APPLICATION.uris[0]`
+  status "ROOT_URL: $ROOT_URL"
+}
 install_meteor() {
   if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
     status "Skipping Meteor installation. Already installed."
@@ -90,6 +95,7 @@ build() {
 
 install_node
 extract_mongo_url
+extract_root_url
 install_meteor
 build
 
