@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -f $1/.meteor/release ]; then
   echo "Meteor" && exit 0

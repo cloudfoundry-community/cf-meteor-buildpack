@@ -1,9 +1,29 @@
-#!/bin/sh
+#!/bin/bash
 
 BUILD_DIR=$1
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+jq=$DIR/jq
+chmod +x $jq
+
+extract_mongo_url() {
+  status "Pulling MONGO_URL from VCAP_SERVICES"
+  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url' | sed -e 's/^"//'  -e 's/"$//'`
+  status "MONGO_URL: $MONGO_URL"
+}
+
+extract_root_url() {
+  status "Pulling ROOT_URL from VCAP_APPLICATION"
+  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
+  export ROOT_URL="http://$DOMAIN"
+  status "ROOT_URL: $ROOT_URL"
+}
+
+extract_mongo_url
+extract_root_url
 
 cat <<-YAML
 ---
 default_process_types:
-  web: vendor/node/bin/node deploy/bundle/main.js
+  web: MONGO_URL=$MONGO_URL ROOT_URL=$ROOT_URL vendor/node/bin/node deploy/bundle/main.js
 YAML

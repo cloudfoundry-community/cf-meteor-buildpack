@@ -17,9 +17,6 @@ status() {
   echo "-----> $*"
 }
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-jq=$DIR/jq
-chmod +x $jq
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
 install_node() {
@@ -42,18 +39,6 @@ install_node() {
   PATH=$BUILD_DIR/.vendor/node/bin:$PATH
 }
 
-extract_mongo_url() {
-  status "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url' | sed -e 's/^"//'  -e 's/"$//'`
-  status "MONGO_URL: $MONGO_URL"
-}
-
-extract_root_url() {
-  status "Pulling ROOT_URL from VCAP_APPLICATION"
-  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
-  export ROOT_URL="http://$DOMAIN"
-  status "ROOT_URL: $ROOT_URL"
-}
 install_meteor() {
   if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
     status "Skipping Meteor installation. Already installed."
@@ -98,8 +83,6 @@ build() {
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
 install_node
-extract_mongo_url
-extract_root_url
 install_meteor
 build
 
