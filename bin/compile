@@ -17,6 +17,8 @@ status() {
   echo "-----> $*"
 }
 
+PWD=`pwd`
+jq=$PWD/jq
 node_version=$(curl --silent --get https://semver.io/node/resolve)
 
 install_node() {
