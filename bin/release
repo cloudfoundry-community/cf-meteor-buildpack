@@ -7,16 +7,16 @@ jq=$DIR/jq
 chmod +x $jq
 
 extract_mongo_url() {
-  echo "Pulling MONGO_URL from VCAP_SERVICES"
+  #echo "Pulling MONGO_URL from VCAP_SERVICES"
   export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url'`
-  echo "MONGO_URL: $MONGO_URL"
+  #echo "MONGO_URL: $MONGO_URL"
 }
 
 extract_root_url() {
-  echo "Pulling ROOT_URL from VCAP_APPLICATION"
+  #echo "Pulling ROOT_URL from VCAP_APPLICATION"
   DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
   export ROOT_URL="http://$DOMAIN"
-  echo "ROOT_URL: $ROOT_URL"
+  #echo "ROOT_URL: $ROOT_URL"
 }
 
 extract_mongo_url
