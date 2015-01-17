@@ -22,52 +22,6 @@ We need to do an initial deploy of our app to Cloud Foundry so the app environme
 
 This will not start successfully since we have not setup environment or bound a Mongo service to the app.
 
-##Setup environment variables
-
-###Workaround for now...Ugh
-
-Until scripts pull VCAP_SERVICES data (MongoDB URL and app URI), we must set specific environment variables for the Meteor app to start.
-
-```
-% cf env wordplay
-...
-System-Provided:
-{
- "VCAP_SERVICES": {
-  "mongodb-2.2": [
-   {
-    "credentials": {
-     "db": "db",
-     ...
-     "url": "mongodb://[guid-user-id]@[ip address]:[port]/db",
-     ...
-    },
-    ...
-   }
-  ]
- }
-}
-
-% cf set-env wordplay MONGO_URL [mongodb-2.2 url from above]
-
-% cf domains
-Getting domains in org cs-home as [username]...
-name                  status
-[CF Domain URL]       shared
-
-% cf set-env wordplay ROOT_URL http://wordplay.[CF Domain URL]
-```
-
-To verify you set the environment variables for the app, run the `cf env` command again and look for the "User-Provided" section.
-
-```
-% cf env wordplay
-...
-User-Provided:
-MONGO_URL: [mongodb-2.2 url from above]
-ROOT_URL: http://wordplay.[CF Domain URL]
-```
-
 ##Restage your Cloud Foundry app
 
 To bind a Mongo service to our app we will look into the Cloud Foundry marketplace, create a mongo service instance and then bind that instance to our app.
