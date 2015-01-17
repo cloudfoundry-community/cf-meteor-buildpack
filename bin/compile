@@ -86,9 +86,9 @@ install_node
 install_meteor
 build
 
-# status "Checking for post_compile script"
-# if [ -f $BUILD_DIR/bin/post_compile ] ; then
-#     status "Running post_compile hook"
-#     chmod +x $BUILD_DIR/bin/post_compile
-#     $BUILD_DIR/bin/post_compile
-# fi
+status "Checking for post_compile script"
+if [ -f $BUILD_DIR/bin/post_compile ] ; then
+    status "Running post_compile hook"
+    chmod +x $BUILD_DIR/bin/post_compile
+    $BUILD_DIR/bin/post_compile
+fi
