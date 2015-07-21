@@ -8,7 +8,7 @@ chmod +x $jq
 
 extract_mongo_url() {
   #echo "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.2"[0].credentials.url'`
+  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.4"[0].credentials.url'`
   #echo "MONGO_URL: $MONGO_URL"
 }
 

@@ -17,7 +17,7 @@ To run your new app:
 We need to do an initial deploy of our app to Cloud Foundry so the app environment and bound services can be modified in following steps.
 
 ```
-% cf push wordplay -b https://github.com/csterwa/cf-meteor-buildpack.git
+% cf push wordplay -b https://github.com/cloudfoundry-community/cf-meteor-buildpack.git
 ```
 
 This will not start successfully since we have not setup environment or bound a Mongo service to the app.
