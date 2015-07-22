@@ -17,15 +17,18 @@ To run your new app:
 We need to do an initial deploy of our app to Cloud Foundry so the app environment and bound services can be modified in following steps.
 
 ```
-% cf push leaderboard -b https://github.com/cloudfoundry-community/cf-meteor-buildpack.git
+% cf push leaderboard -b https://github.com/cloudfoundry-community/cf-meteor-buildpack.git --no-start
 ```
 
-This will not start successfully since we have not setup environment or bound a Mongo service to the app.
+This will not start the app, it will only upload the app.  We will need to create a database to make the example app work.
 
-##Restage your Cloud Foundry app
+##Start your Cloud Foundry app
 
 To bind a Mongo service to our app we will look into the Cloud Foundry marketplace, create a mongo service instance and then bind that instance to our app.
 
+There are two options, you can use MongoDB or Mongolab.
+
+###MongoDB
 ```
 % cf marketplace
 Getting services from marketplace in org cs-home / space development as [username]...
@@ -50,8 +53,42 @@ Binding service leaderboard-mongodb to app leaderboard in org [org] / space deve
 OK
 TIP: Use 'cf restage' to ensure your env variable changes take effect
 
-% cf restage leaderboard
-Restaging app leaderboard in org [org] / space development as [username]...
+% cf start leaderboard
+Starting app leaderboard in org [org] / space development as [username]...
+...
+1 of 1 instances running
+
+App started
+...
+```
+
+###MongoLab
+```
+% cf marketplace
+Getting services from marketplace in org cs-home / space development as [username]...
+OK
+
+service   plans   description
+mongolab  sandbox    MongoDB NoSQL database
+
+% cf create-service mongolab sandbox leaderboard-mongolab
+Creating service leaderboard-mongolab in org cs-home / space development as [username]...
+OK
+
+% cf services
+Getting services in org cs-home / space development as [username]...
+OK
+
+name               service   plan   bound apps
+leaderboard-mongolab   mongolab   sandbox
+
+% cf bind-service leaderboard leaderboard-mongolab
+Binding service leaderboard-mongolab to app leaderboard in org [org] / space development as [username]...
+OK
+TIP: Use 'cf restage' to ensure your env variable changes take effect
+
+% cf start leaderboard
+Starting app leaderboard in org [org] / space development as [username]...
 ...
 1 of 1 instances running
 
