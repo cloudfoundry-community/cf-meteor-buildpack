@@ -32,9 +32,9 @@ Getting services from marketplace in org cs-home / space development as [usernam
 OK
 
 service   plans   description
-mongodb   free    MongoDB NoSQL database
+mongodb   100    MongoDB NoSQL database
 
-% cf create-service mongodb free wordplay-mongodb
+% cf create-service mongodb 100 wordplay-mongodb
 Creating service wordplay-mongodb in org cs-home / space development as [username]...
 OK
 
@@ -43,7 +43,7 @@ Getting services in org cs-home / space development as [username]...
 OK
 
 name               service   plan   bound apps
-wordplay-mongodb   mongodb   free
+wordplay-mongodb   mongodb   100
 
 % cf bind-service wordplay wordplay-mongodb
 Binding service wordplay-mongodb to app wordplay in org [org] / space development as [username]...
