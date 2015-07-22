@@ -7,8 +7,10 @@ jq=$DIR/jq
 chmod +x $jq
 
 extract_mongo_url() {
+  # Set if not already present.
   if [ -n "${MONGO_URL}" ]
     #echo "Pulling MONGO_URL from VCAP_SERVICES"
+    # Find the first service key that contains "mongo", then grab the 'url' (or 'uri') key beneath it.
     export MONGO_URL=`echo $VCAP_SERVICES | $jq 'to_entries|map(select(.key|contains("mongo")))[0]|.value[0].credentials|if .url then .url else .uri end|. // empty'`
   fi
   #echo "MONGO_URL: $MONGO_URL"
