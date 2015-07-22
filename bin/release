@@ -7,8 +7,17 @@ jq=$DIR/jq
 chmod +x $jq
 
 extract_mongo_url() {
-  #echo "Pulling MONGO_URL from VCAP_SERVICES"
-  export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.4"[0].credentials.url'`
+  echo "Pulling MONGO_URL from VCAP_SERVICES"
+  CHECK=`echo $VCAP_SERVICES | grep mongolab | wc -l`
+  if [ $CHECK -eq 1 ];
+  then
+    export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongolab"[0].credentials.uri'`
+    echo "Using Mongolab"
+  else
+    export MONGO_URL=`echo $VCAP_SERVICES | $jq '."mongodb-2.4"[0].credentials.url'`
+    echo "Using MongoDB"
+  fi
+  
   #echo "MONGO_URL: $MONGO_URL"
 }
 
