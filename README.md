@@ -37,7 +37,7 @@ OK
 service   plans   description
 mongodb   100    MongoDB NoSQL database
 
-% cf create-service mongodb free leaderboard-mongodb
+% cf create-service mongodb 100 leaderboard-mongodb
 Creating service leaderboard-mongodb in org cs-home / space development as [username]...
 OK
 
@@ -46,7 +46,7 @@ Getting services in org cs-home / space development as [username]...
 OK
 
 name               service   plan   bound apps
-leaderboard-mongodb   mongodb   free
+leaderboard-mongodb   mongodb   100
 
 % cf bind-service leaderboard leaderboard-mongodb
 Binding service leaderboard-mongodb to app leaderboard in org [org] / space development as [username]...
