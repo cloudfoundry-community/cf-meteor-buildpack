@@ -17,10 +17,12 @@ extract_mongo_url() {
 }
 
 extract_root_url() {
-  #echo "Pulling ROOT_URL from VCAP_APPLICATION"
-  DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
-  export ROOT_URL="http://$DOMAIN"
-  #echo "ROOT_URL: $ROOT_URL"
+  if [ -z "${ROOT_URL}" ]; then
+    #echo "Pulling ROOT_URL from VCAP_APPLICATION"
+    DOMAIN=`echo $VCAP_APPLICATION | $jq '.uris[0]' | sed -e 's/^"//'  -e 's/"$//'`
+    export ROOT_URL="http://$DOMAIN"
+    #echo "ROOT_URL: $ROOT_URL"
+  fi
 }
 
 extract_mongo_url
