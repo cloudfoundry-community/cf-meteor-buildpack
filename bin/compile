@@ -4,6 +4,7 @@ BUILD_DIR=$1
 CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
 PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
+BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 
 indent() {
   c='s/^/       /'
@@ -85,6 +86,15 @@ build() {
 install_node
 install_meteor
 build
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+cp $DIR/jq $BUILD_DIR/.vendor
+chmod +x $BUILD_DIR/.vendor
+
+mkdir -p $BUILD_DIR/.profile.d
+
+cp $BP_DIR/* $BUILD_DIR/.profile.d
 
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
