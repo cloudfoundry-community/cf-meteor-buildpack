@@ -90,13 +90,16 @@ build
 echo BP_DIR= $BP_DIR
 echo BUILD_DIR= $BUILD_DIR
 echo CACHE_DIR= $CACHE_DIR
+ls -lah $BP_DIR
+ls -lah $BUILD_DIR
 
-sudo p $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
-sudo chmod +x $BUILD_DIR/.vendor/jq
 
-sudo mkdir -p $BUILD_DIR/.profile.d
+cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
+chmod +x $BUILD_DIR/.vendor/jq
 
-sudo cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
+mkdir -p $BUILD_DIR/.profile.d
+
+cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
