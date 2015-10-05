@@ -87,12 +87,12 @@ install_node
 install_meteor
 build
 
-cp $BP_DIR/bin/jq $BUILD_DIR/.vendor
+cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/
 chmod +x $BUILD_DIR/.vendor/jq
 
 mkdir -p $BUILD_DIR/.profile.d
 
-cp $BP_DIR/profile/* $BUILD_DIR/.profile.d
+cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
