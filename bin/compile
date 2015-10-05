@@ -87,7 +87,7 @@ install_node
 install_meteor
 build
 
-cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/
+cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
 chmod +x $BUILD_DIR/.vendor/jq
 
 mkdir -p $BUILD_DIR/.profile.d
