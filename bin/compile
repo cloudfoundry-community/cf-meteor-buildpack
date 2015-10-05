@@ -90,14 +90,14 @@ build
 #make the .vendor directory since there was no node installer
 mkdir -p $BUILD_DIR/.vendor
 
+#copy jq to be used at runtime
 cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
 chmod +x $BUILD_DIR/.vendor/jq
 
+#copy the env.sh file to run on runtime
 mkdir -p $BUILD_DIR/.profile.d
-
 cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
-ls -lah $BUILD_DIR
 
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then

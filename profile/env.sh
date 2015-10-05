@@ -30,7 +30,3 @@ extract_couchdb_url() {
 extract_mongo_url
 extract_root_url
 extract_couchdb_url
-
-echo $VCAP_SERVICES
-echo $MONGO_URL
-echo $ROOT_URL
