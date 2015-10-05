@@ -87,11 +87,15 @@ install_node
 install_meteor
 build
 
+#make the .vendor directory since there was no node installer
+mkdir -p $BUILD_DIR/.vendor
+
 echo BP_DIR= $BP_DIR
 echo BUILD_DIR= $BUILD_DIR
 echo CACHE_DIR= $CACHE_DIR
 ls -lah $BP_DIR
 ls -lah $BUILD_DIR
+ls-lah $BUILD_DIR/vendor
 
 
 cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
