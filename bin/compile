@@ -97,6 +97,8 @@ mkdir -p $BUILD_DIR/.profile.d
 
 cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
+ls -lah $BUILD_DIR
+
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
     status "Running post_compile hook"

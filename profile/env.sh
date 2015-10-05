@@ -5,7 +5,7 @@ extract_mongo_url() {
   if [ -z "${MONGO_URL}" ]; then
     #echo "Pulling MONGO_URL from VCAP_SERVICES"
     # Find the first service key that contains "mongo", then grab the 'url' (or 'uri') key beneath it.
-    export MONGO_URL=`echo $VCAP_SERVICES | $jq 'to_entries|map(select(.key|contains("mongo")))[0]|.value[0].credentials|if .url then .url else .uri end|. // empty'`
+    export MONGO_URL=`echo $VCAP_SERVICES | $jq 'to_entries|map(select(.key|contains("mongo")))[0]|.value[0].credentials|if .url then .url else .uri end|. // empty' | sed -e 's/^"//'  -e 's/"$//'`
   fi
   #echo "MONGO_URL: $MONGO_URL"
 }
@@ -23,7 +23,7 @@ extract_couchdb_url() {
   if [ -z "${COUCHDB_URL}" ]; then
     #echo "Pulling COUCHDB_URL from VCAP_SERVICES"
     # Find the first service key that contains "cloudant", then grab the 'url' (or 'uri') key beneath it.
-    export COUCHDB_URL=`echo $VCAP_SERVICES | $jq 'to_entries|map(select(.key|contains("cloudant")))[0]|.value[0].credentials|if .url then .url else .uri end|. // empty'`
+    export COUCHDB_URL=`echo $VCAP_SERVICES | $jq 'to_entries|map(select(.key|contains("cloudant")))[0]|.value[0].credentials|if .url then .url else .uri end|. // empty'  | sed -e 's/^"//'  -e 's/"$//'`
   fi
 }
 
