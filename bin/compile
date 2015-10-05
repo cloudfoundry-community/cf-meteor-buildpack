@@ -90,7 +90,7 @@ build
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 cp $DIR/jq $BUILD_DIR/.vendor
-chmod +x $BUILD_DIR/.vendor
+chmod +x $BUILD_DIR/.vendor/jq
 
 mkdir -p $BUILD_DIR/.profile.d
 
