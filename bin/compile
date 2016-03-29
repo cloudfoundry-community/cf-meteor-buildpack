@@ -51,7 +51,7 @@ install_meteor() {
   # curl https://install.meteor.com | sh
   status "Downloading Meteor install script"
 
-  status "Execute ./install-meteor-verbose.sh"
+  status "Execute $BP_DIR/bin/install-meteor-verbose.sh"
   $BP_DIR/bin/install-meteor-verbose.sh
   status "Done"
 
