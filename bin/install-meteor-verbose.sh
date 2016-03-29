@@ -130,7 +130,8 @@ fi
 
 TARBALL_URL="https://d3sqy0vbqsdhku.cloudfront.net/packages-bootstrap/${RELEASE}/meteor-bootstrap-${PLATFORM}.tar.gz"
 
-status "release $RELEASE $TARBALL_URL"
+status "release $RELEASE"
+status $TARBALL_URL
 
 INSTALL_TMPDIR="$HOME/.meteor-install-tmp"
 rm -rf "$INSTALL_TMPDIR"
