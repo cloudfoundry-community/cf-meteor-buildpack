@@ -53,7 +53,7 @@ install_meteor() {
 
   status "Execute $BP_DIR/bin/install-meteor-verbose.sh"
   chmod +x $BP_DIR/bin/install-meteor-verbose.sh
-  $BP_DIR/bin/install-meteor-verbose.sh
+  $BP_DIR/bin/install-meteor-verbose.sh $BUILD_DIR
   status "Done"
 
   status "Updating PATH with Meteor"
