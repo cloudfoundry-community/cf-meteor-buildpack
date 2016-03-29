@@ -31,7 +31,7 @@ run_it () {
 # ~/.meteor, replacing whatever is already there. (~/.meteor is only a cache of
 # packages and package metadata; no personal persistent data is stored there.)
 
-RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|" | xargs)
+RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|" | tr -d '\r')
 
 status "a $RELEASE b"
 
