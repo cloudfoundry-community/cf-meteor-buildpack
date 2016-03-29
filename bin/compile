@@ -52,9 +52,6 @@ install_meteor() {
 
 RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|g")
 
-status "release $RELEASE"
-
-
 # Now, on to the actual installer!
 
 ## NOTE sh NOT bash. This script should be POSIX sh only, since we don't
@@ -150,6 +147,8 @@ if [ -e "$HOME/.meteor" ]; then
 fi
 
 TARBALL_URL="https://d3sqy0vbqsdhku.cloudfront.net/packages-bootstrap/${RELEASE}/meteor-bootstrap-${PLATFORM}.tar.gz"
+
+status "release $RELEASE url $TARBALL_URL"
 
 INSTALL_TMPDIR="$HOME/.meteor-install-tmp"
 rm -rf "$INSTALL_TMPDIR"
