@@ -33,9 +33,6 @@ run_it () {
 
 RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|" | tr -d '\r')
 
-status "a $RELEASE b"
-
-
 # Now, on to the actual installer!
 
 ## NOTE sh NOT bash. This script should be POSIX sh only, since we don't
