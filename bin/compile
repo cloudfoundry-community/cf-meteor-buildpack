@@ -52,6 +52,8 @@ install_meteor() {
 
 RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|g")
 
+status "release $RELEASE"
+
 
 # Now, on to the actual installer!
 
