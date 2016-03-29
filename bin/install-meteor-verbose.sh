@@ -31,7 +31,7 @@ run_it () {
 # ~/.meteor, replacing whatever is already there. (~/.meteor is only a cache of
 # packages and package metadata; no personal persistent data is stored there.)
 
-RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|g")
+RELEASE="1.2.1"
 
 
 # Now, on to the actual installer!
@@ -129,9 +129,6 @@ if [ -e "$HOME/.meteor" ]; then
 fi
 
 TARBALL_URL="https://d3sqy0vbqsdhku.cloudfront.net/packages-bootstrap/${RELEASE}/meteor-bootstrap-${PLATFORM}.tar.gz"
-
-status "release $RELEASE"
-status $TARBALL_URL
 
 INSTALL_TMPDIR="$HOME/.meteor-install-tmp"
 rm -rf "$INSTALL_TMPDIR"
