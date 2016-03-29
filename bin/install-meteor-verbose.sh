@@ -24,6 +24,7 @@
 # That's good because it prevents our output overlapping with curl's.
 # It also means that we can't run a partially downloaded script.
 # We don't indent because it would be really confusing with the heredocs.
+
 run_it () {
 
 # This always does a clean install of the latest version of Meteor into your
