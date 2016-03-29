@@ -31,7 +31,9 @@ run_it () {
 # ~/.meteor, replacing whatever is already there. (~/.meteor is only a cache of
 # packages and package metadata; no personal persistent data is stored there.)
 
-RELEASE="1.2.1"
+RELEASE=$(cat $BUILD_DIR/.meteor/release | sed "s|METEOR@\(.*\)|\1|g")
+
+status "a $RELEASE b"
 
 
 # Now, on to the actual installer!
