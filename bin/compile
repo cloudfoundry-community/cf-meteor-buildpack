@@ -17,7 +17,7 @@ status() {
   echo "-----> $*"
 }
 
-node_version=$(curl --silent --get https://semver.io/node/resolve/0.10.x)
+node_version=$(curl --silent --get https://semver.io/node/resolve/5.x)
 
 install_node() {
   if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
@@ -70,6 +70,8 @@ install_meteor() {
 build() {
   (
     cd $BUILD_DIR
+    status "Installing npm dependencies"
+    npm install --production 2>&1 | indent
     status "Building meteor bundle"
     meteor build --directory deploy --server http://localhost:3000
     cd deploy/bundle/programs/server
