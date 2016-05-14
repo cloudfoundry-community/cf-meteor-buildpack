@@ -70,7 +70,7 @@ install_meteor() {
 build() {
   (
     cd $BUILD_DIR
-    status "Building meteor bundle"
+    status "Building meteor bundle now"
     #meteor build  --server http://localhost:3000 --directory ../deploy
     #cd ../deploy/bundle/programs/server
     ls
