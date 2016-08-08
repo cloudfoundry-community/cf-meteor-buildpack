@@ -19,14 +19,6 @@ status() {
   echo "-----> $*"
 }
 
-#copy jq to be used at runtime
-cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
-chmod +x $BUILD_DIR/.vendor/jq
-
-#copy the env.sh file to run on runtime
-mkdir -p $BUILD_DIR/.profile.d
-cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
-
 APP_RELEASE=`cat "$BUILD_DIR/.meteor/release" | sed -e 's/METEOR@//'`
 
 # Where we will install meteor. Has to be outside the APP_CHECKOUT_DIR.
@@ -120,6 +112,15 @@ fi
 # Environment
 #
 # Add an export of PATH which includes our compile dir, etc.
+mkdir -p $BUILD_DIR/.vendor
+
+#copy jq to be used at runtime
+cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
+chmod +x $BUILD_DIR/.vendor/jq
+
+#copy the env.sh file to run on runtime
+mkdir -p $BUILD_DIR/.profile.d
+cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
 cat > "$APP_CHECKOUT_DIR"/.profile.d/path.sh <<EOF
   #!/bin/sh
