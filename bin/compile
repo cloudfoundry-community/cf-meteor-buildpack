@@ -42,7 +42,7 @@ fi
 
 METEOR="$METEOR_DIR/.meteor/meteor" # The meteor binary.
 
-status "-----> Meteor version: `$METEOR --version`"
+status "Meteor version: `$METEOR --version`"
 
 #
 # Build the meteor app!
@@ -122,7 +122,7 @@ chmod +x $BUILD_DIR/.vendor/jq
 mkdir -p $BUILD_DIR/.profile.d
 cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
-cat > "$APP_CHECKOUT_DIR"/.profile.d/path.sh <<EOF
+cat > "$BUILD_DIR"/.profile.d/path.sh <<EOF
   #!/bin/sh
   export PATH=\$HOME/$COMPILE_DIR_SUFFIX/bin:\$PATH
   export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$HOME/$COMPILE_DIR_SUFFIX/lib
