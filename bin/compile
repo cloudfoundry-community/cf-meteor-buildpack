@@ -31,8 +31,6 @@ COMPILE_DIR="$BUILD_DIR"/"$COMPILE_DIR_SUFFIX"
 mkdir -p "$BUILD_DIR" "$METEOR_DIR"
 mkdir -p "$COMPILE_DIR" "$COMPILE_DIR/bin" "$COMPILE_DIR/lib"
 
-status "Found Meteor APP version $APP_RELEASE"
-
 #
 # Install meteor
 #
@@ -44,7 +42,7 @@ fi
 
 METEOR="$METEOR_DIR/.meteor/meteor" # The meteor binary.
 
-status "Meteor version: `$METEOR --version`"
+status "Meteor version: `HOME=$METEOR_DIR $METEOR --version`"
 
 #
 # Build the meteor app!
