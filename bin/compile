@@ -19,16 +19,13 @@ status() {
   echo "-----> $*"
 }
 
-[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
-[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
-
 APP_RELEASE=`cat "$BUILD_DIR/.meteor/release" | sed -e 's/METEOR@//'`
 
 # Where we will install meteor. Has to be outside the APP_CHECKOUT_DIR.
 METEOR_DIR="$CACHE_DIR/$APP_RELEASE"
 # Where we'll put things we compile.
 COMPILE_DIR_SUFFIX=".meteor/cf_build"
-COMPILE_DIR="$APP_CHECKOUT_DIR"/"$COMPILE_DIR_SUFFIX"
+COMPILE_DIR="$BUILD_DIR"/"$COMPILE_DIR_SUFFIX"
 
 # Create directories as needed.
 mkdir -p "$BUILD_DIR" "$METEOR_DIR"
@@ -115,9 +112,6 @@ fi
 # Environment
 #
 # Add an export of PATH which includes our compile dir, etc.
-
-#make the .vendor directory since there was no node installer
-mkdir -p $BUILD_DIR/.vendor
 
 #copy jq to be used at runtime
 cp $BP_DIR/bin/jq $BUILD_DIR/.vendor/jq
