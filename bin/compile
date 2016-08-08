@@ -1,9 +1,10 @@
 #!/bin/bash
 
+set -e
+
 BUILD_DIR=$1
 CACHE_DIR=$2
 METEOR_HOME=$BUILD_DIR/.meteor/local
-PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
 BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 
 indent() {
@@ -18,69 +19,102 @@ status() {
   echo "-----> $*"
 }
 
-node_version=$(curl --silent --get https://semver.io/node/resolve/0.10.x)
-
-install_node() {
-  if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
-    status "Skipping Node installation. Already installed."
-    return
-  fi
-
-  # Download node from Heroku's S3 mirror of nodejs.org/dist
-  status "Downloading and installing node $node_version"
-  NODE_INSTALLER=node-installer.tar.gz
-  NODE_URL="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
-  curl $NODE_URL > $NODE_INSTALLER
-  tar xzf $NODE_INSTALLER -C $BUILD_DIR
-
-  # Move node (and npm) into ./.vendor and make them executable
-  mkdir -p $BUILD_DIR/.vendor
-  mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.vendor/node
-  chmod +x $BUILD_DIR/.vendor/node/bin/*
-  PATH=$BUILD_DIR/.vendor/node/bin:$PATH
-}
-
-install_meteor() {
-  if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
-    status "Skipping Meteor installation. Already installed."
-    return
-  fi
-
-  # status "Install Meteor"
-  # export PATH=/usr/bin:$PATH # necessary for install script to run from URL
-  # curl https://install.meteor.com | sh
-  status "Downloading Meteor install script"
-
-  status "Execute $BP_DIR/bin/install-meteor-verbose.sh"
-  source $BP_DIR/bin/install-meteor-verbose.sh
-  status "Done"
-
-  status "Updating PATH with Meteor"
-  PATH=$HOME/.meteor:$PATH
-}
-
-build() {
-  cd $BUILD_DIR
-
-  # If we use npm on root, run npm install.
-  if [[ -e ./package.json ]]; then
-    npm install
-  fi
-
-  status "Building meteor bundle"
-  meteor build --directory deploy --server http://localhost:3000
-  cd deploy/bundle/programs/server
-  status "Installing npm dependencies"
-  npm install 2>&1 | indent
-  mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
-}
-
 [ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
 [ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
 
-install_node
-install_meteor
-build
+APP_RELEASE=`cat "$BUILD_DIR/.meteor/release" | sed -e 's/METEOR@//'`
+
+# Where we will install meteor. Has to be outside the APP_CHECKOUT_DIR.
+METEOR_DIR="$CACHE_DIR/$APP_RELEASE"
+# Where we'll put things we compile.
+COMPILE_DIR_SUFFIX=".meteor/cf_build"
+COMPILE_DIR="$APP_CHECKOUT_DIR"/"$COMPILE_DIR_SUFFIX"
+
+# Create directories as needed.
+mkdir -p "$BUILD_DIR" "$METEOR_DIR"
+mkdir -p "$COMPILE_DIR" "$COMPILE_DIR/bin" "$COMPILE_DIR/lib"
+
+#
+# Install meteor
+#
+
+if [ ! -e "$METEOR_DIR/.meteor/meteor" ]; then
+  status "Installing meteor"
+  curl -sS "https://install.meteor.com/?release=$APP_RELEASE" | HOME="$METEOR_DIR" /bin/sh
+fi
+
+METEOR="$METEOR_DIR/.meteor/meteor" # The meteor binary.
+
+status "-----> Meteor version: `$METEOR --version`"
+
+#
+# Build the meteor app!
+#
+cd "$BUILD_DIR"
+
+# Determine if we have --server-only flag capability. Allow non-zero return from grep.
+status "Checking if this meteor version supports --server-only"
+set +e
+HAS_SERVER_ONLY=`HOME=$METEOR_DIR $METEOR help build | grep -e '--server-only'`
+set -e
+if [ -n "$HAS_SERVER_ONLY" ] ; then
+  SERVER_ONLY_FLAG='--server-only'
+else
+  SERVER_ONLY_FLAG=""
+fi
+
+METEOR_NPM=`find $METEOR_DIR -wholename "*/dev_bundle/bin/npm"`
+METEOR_NODE=`find $METEOR_DIR -wholename "*/dev_bundle/bin/node"`
+# Trim whitespace
+METEOR_NPM=`echo "$METEOR_NPM" | sed -e 's/[[:space:]]*$//'`
+METEOR_NODE=`echo "$METEOR_NODE" | sed -e 's/[[:space:]]*$//'`
+if [ -z "$METEOR_NPM" ] || [ -z "$METEOR_NODE" ] ; then
+  echo "FATAL: Can't find npm/node within meteor bundle. This is a bug. Please open an issue at https://github.com/AdmitHub/meteor-buildpack-horse.";
+  exit 1
+fi
+
+# Copy node into place for production.
+NODE="$COMPILE_DIR"/bin/node
+cp "$METEOR_NODE" "$NODE"
+chmod a+x "$NODE"
+
+# Add npm and node path so that 1.4's npm-rebuild.js will function.
+PATH="$METEOR_DIR/.meteor:`dirname $METEOR_NPM`:$COMPILE_DIR/bin:$PATH"
+
+status "Using node: `$NODE --version`"
+status "    and npm: `$METEOR_NPM --version`"
+
+# If we use npm on root, run npm install.  Don't use `--production` here, as we
+# may need devDependencies (e.g. webpack) in order to build the meteor app.
+if [ -e "$APP_SOURCE_DIR"/package.json ]; then
+  $METEOR_NPM install
+fi
+
+# Now on to bundling. Don't put the bundle in $APP_CHECKOUT_DIR during
+# bundling, or it will recurse, trying to bundle up its own bundling.
+
+status "Building Meteor app"
+BUNDLE_DEST=`mktemp -d "$BP_DIR/build-XXXX"`
+
+# The actual invocation of `meteor build`!
+HOME=$METEOR_DIR $METEOR build --server http://localhost:3000 $SERVER_ONLY_FLAG --directory $BUNDLE_DEST
+
+status "Moving built slug to $COMPILE_DIR/app"
+mv $BUNDLE_DEST/bundle "$COMPILE_DIR/app"
+rmdir $BUNDLE_DEST
+
+# Run npm install on the built slug; only for `--production` dependencies.
+status "Installing npm production dependencies on built slug"
+if [ -e "$COMPILE_DIR"/app/programs/server/package.json ]; then
+  cd "$COMPILE_DIR"/app/programs/server
+  $METEOR_NPM install --production
+  cd "$APP_SOURCE_DIR"
+fi
+
+#
+# Environment
+#
+# Add an export of PATH which includes our compile dir, etc.
 
 #make the .vendor directory since there was no node installer
 mkdir -p $BUILD_DIR/.vendor
@@ -93,6 +127,11 @@ chmod +x $BUILD_DIR/.vendor/jq
 mkdir -p $BUILD_DIR/.profile.d
 cp $BP_DIR/profile/* $BUILD_DIR/.profile.d/
 
+cat > "$APP_CHECKOUT_DIR"/.profile.d/path.sh <<EOF
+  #!/bin/sh
+  export PATH=\$HOME/$COMPILE_DIR_SUFFIX/bin:\$PATH
+  export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$HOME/$COMPILE_DIR_SUFFIX/lib
+EOF
 
 status "Checking for post_compile script"
 if [ -f $BUILD_DIR/bin/post_compile ] ; then
