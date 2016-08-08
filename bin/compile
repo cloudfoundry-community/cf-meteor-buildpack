@@ -83,7 +83,7 @@ status "    and npm: `$METEOR_NPM --version`"
 
 # If we use npm on root, run npm install.  Don't use `--production` here, as we
 # may need devDependencies (e.g. webpack) in order to build the meteor app.
-if [ -e "$APP_SOURCE_DIR"/package.json ]; then
+if [ -e "$BUILD_DIR"/package.json ]; then
   $METEOR_NPM install
 fi
 
@@ -105,7 +105,7 @@ status "Installing npm production dependencies on built slug"
 if [ -e "$COMPILE_DIR"/app/programs/server/package.json ]; then
   cd "$COMPILE_DIR"/app/programs/server
   $METEOR_NPM install --production
-  cd "$APP_SOURCE_DIR"
+  cd "$BUILD_DIR"
 fi
 
 #
