@@ -7,5 +7,5 @@ BUILD_DIR=$1
 cat <<-YAML
 ---
 default_process_types:
-  web: .meteor/heroku_build/bin/node .meteor/cf_build/app/main.js
+  web: .meteor/cf_build/bin/node .meteor/cf_build/app/main.js
 YAML
