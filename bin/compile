@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -e
+set -e
 
 BUILD_DIR=$1
 CACHE_DIR=$2
@@ -94,7 +94,7 @@ status "Building Meteor app"
 BUNDLE_DEST=`mktemp -d "$BP_DIR/build-XXXX"`
 
 # The actual invocation of `meteor build`!
-HOME=$METEOR_DIR $METEOR build --server http://localhost:3000 $SERVER_ONLY_FLAG --directory $BUNDLE_DEST
+METEOR_PROGRESS_DEBUG=1 HOME=$METEOR_DIR $METEOR build --server http://localhost:3000 $SERVER_ONLY_FLAG --directory $BUNDLE_DEST
 
 status "Moving built slug to $COMPILE_DIR/app"
 mv $BUNDLE_DEST/bundle "$COMPILE_DIR/app"
