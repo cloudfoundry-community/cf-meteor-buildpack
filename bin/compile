@@ -1,94 +1,217 @@
-#!/bin/bash
+#!/bin/sh
 
-BUILD_DIR=$1
-CACHE_DIR=$2
-METEOR_HOME=$BUILD_DIR/.meteor/local
-PATH=$METEOR_HOME/usr/bin:$METEOR_HOME/usr/lib/meteor/bin:$PATH
+#
+# Heroku buildpack for Bluemix
+#
 
-indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";; # mac/bsd sed: -l buffers on line boundaries
-    *)      sed -u "$c";; # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
-  esac
-}
+# fail fast.
+set -e
+# debug verbosely.
+#set -x
 
-status() {
-  echo "-----> $*"
-}
-
-node_version=$(curl --silent --get https://semver.io/node/resolve/0.10.x)
-
-install_node() {
-  if [ -f "$BUILD_DIR/.vendor/node/bin/node" ] ; then
-    status "Skipping Node installation. Already installed."
-    return
+# Load config vars into environment (from https://devcenter.heroku.com/articles/buildpack-api)
+export_env_dir() {
+  env_dir=$1
+  whitelist_regex=${2:-''}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+      :
+    done
   fi
-
-  # Download node from Heroku's S3 mirror of nodejs.org/dist
-  status "Downloading and installing node $node_version"
-  NODE_INSTALLER=node-installer.tar.gz
-  NODE_URL="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
-  curl $NODE_URL > $NODE_INSTALLER
-  tar xzf $NODE_INSTALLER -C $BUILD_DIR
-
-  # Move node (and npm) into ./.vendor and make them executable
-  mkdir -p $BUILD_DIR/.vendor
-  mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.vendor/node
-  chmod +x $BUILD_DIR/.vendor/node/bin/*
-  PATH=$BUILD_DIR/.vendor/node/bin:$PATH
 }
 
-install_meteor() {
-  if [ -f "$METEOR_HOME/usr/bin/meteor" ] ; then
-    status "Skipping Meteor installation. Already installed."
-    return
-  fi
+export_env_dir $3
 
-  # status "Install Meteor"
-  # export PATH=/usr/bin:$PATH # necessary for install script to run from URL
-  # curl https://install.meteor.com | sh
-  status "Downloading Meteor install script"
-  METEOR_INSTALL_SCRIPT=install_meteor.sh
-  curl https://install.meteor.com/ > $METEOR_INSTALL_SCRIPT
-
-  status "Installing Meteor connected to $MONGO_URL"
-  sed -e '/^#!\/bin\/sh/ s/$/ -x/' \
-    -e 's/set -/#set -/' \
-    -e 's/curl --progress-bar --fail.*/curl "$TARBALL_URL" > meteor-bundle.tgz; tar -xzf meteor-bundle.tgz -C "$INSTALL_TMPDIR" -o/' \
-    $METEOR_INSTALL_SCRIPT > install-meteor-verbose.sh
-  chmod +x install-meteor-verbose.sh
-
-  status "Execute ./install-meteor-verbose.sh"
-  ./install-meteor-verbose.sh
-  status "Done"
-
-  status "Updating PATH with Meteor"
-  PATH=$HOME/.meteor:$PATH
-}
-
-build() {
-  (
-    cd $BUILD_DIR
-    status "Building meteor bundle"
-    meteor build --directory deploy --server http://localhost:3000
-    cd deploy/bundle/programs/server
-    status "Installing npm dependencies"
-    npm install 2>&1 | indent
-    mv $BUILD_DIR/.vendor $BUILD_DIR/vendor
-  )
-}
-
-[ ! -d $BUILD_DIR ] && mkdir $BUILD_DIR
-[ ! -d $CACHE_DIR ] && mkdir $CACHE_DIR
-
-install_node
-install_meteor
-build
-
-status "Checking for post_compile script"
-if [ -f $BUILD_DIR/bin/post_compile ] ; then
-    status "Running post_compile hook"
-    chmod +x $BUILD_DIR/bin/post_compile
-    $BUILD_DIR/bin/post_compile
+# Enable verbose debugging if configured to -- though this has to come after
+# we've loaded environment configs.
+if [ -n "${BUILDPACK_VERBOSE+1}" ]; then
+  set -x
 fi
+
+
+# Get the path to dir one above this file.
+BUILDPACK_DIR=$(cd -P -- "$(dirname -- "$0")" && cd .. && pwd -P)
+# Get the directory our app is checked out in (the "BUILD_DIR"), passed by Heroku
+APP_CHECKOUT_DIR=$1
+CACHE_DIR=$2
+if [ -n "${BUILDPACK_CLEAR_CACHE+1}" ]; then
+  echo "----> Clearing cache dir."
+  rm -rf "$CACHE_DIR"
+fi
+
+#
+# Find the meteor app ($APP_SOURCE_DIR).
+#
+
+# Set meteor app dir's location to the root of the git repo, plus the value of
+# METEOR_APP_DIR (which defaults empty).  If you put the meteor app in src/ or
+# some other subdirectory, define METEOR_APP_DIR.
+APP_SOURCE_DIR="${APP_CHECKOUT_DIR}"
+if [ -n "$METEOR_APP_DIR" ]; then
+  APP_SOURCE_DIR="${APP_SOURCE_DIR}/${METEOR_APP_DIR}"
+fi
+
+# Try "$APP_SOURCE_DIR/app/" if meteor app isn't there (the "Iron scaffolding
+# tool" default).
+if [ ! -d "$APP_SOURCE_DIR/.meteor" ] && [ -d "$APP_SOURCE_DIR/app/.meteor" ]; then
+  APP_SOURCE_DIR="$APP_SOURCE_DIR/app/"
+fi
+if [ ! -d "$APP_SOURCE_DIR/.meteor" ]; then
+  echo "FATAL: Can't find meteor app. Set METEOR_APP_DIR to the relative location of the meteor app within your repository if it's not in the root or 'app/' subdirectory.  (Tried ${APP_SOURCE_DIR})"
+  exit 1
+fi
+
+APP_RELEASE=`cat "$APP_SOURCE_DIR/.meteor/release" | sed -e 's/METEOR@//'`
+
+# Where we will install meteor. Has to be outside the APP_CHECKOUT_DIR.
+METEOR_DIR="$CACHE_DIR/$APP_RELEASE"
+# Where we'll put things we compile.
+COMPILE_DIR_SUFFIX=".meteor/heroku_build"
+COMPILE_DIR="$APP_CHECKOUT_DIR"/"$COMPILE_DIR_SUFFIX"
+# Try to minimize meteor's printing, unless we're running verbosely.
+if [ -z "$BUILDPACK_VERBOSE" ]; then
+  METEOR_PRETTY_OUTPUT=0
+fi
+
+# Create directories as needed.
+mkdir -p "$APP_CHECKOUT_DIR" "$METEOR_DIR"
+mkdir -p "$COMPILE_DIR" "$COMPILE_DIR/bin" "$COMPILE_DIR/lib"
+
+# Set a default ROOT_URL if one is not defined. Currently, HEROKU_APP_NAME is
+# only available if you enable the labs addon "Heroku Dyno Metadata":
+# https://devcenter.heroku.com/articles/dyno-metadata
+# This logic is duplicated in extra/root_url.sh so that it repeats on dyno
+# restart.
+if [ -z "$ROOT_URL" ] && [ -n "$HEROKU_APP_NAME" ] ; then
+  export ROOT_URL="https://${HEROKU_APP_NAME}.herokuapp.com"
+fi
+if [ -z "$ROOT_URL" ] ; then
+  echo "FATAL: ROOT_URL is not defined."
+  exit 1
+fi
+
+#
+# Install meteor
+#
+
+if [ ! -e "$METEOR_DIR/.meteor/meteor" ]; then
+  echo "-----> Installing meteor"
+  curl -sS "https://install.meteor.com/?release=$APP_RELEASE" | HOME="$METEOR_DIR" /bin/sh
+fi
+METEOR="$METEOR_DIR/.meteor/meteor" # The meteor binary.
+
+echo "-----> Meteor version: `HOME=$METEOR_DIR $METEOR --version`"
+
+#
+# Build the meteor app!
+#
+cd "$APP_SOURCE_DIR"
+
+# Determine if we have --server-only flag capability. Allow non-zero return from grep.
+echo "-----> Checking if this meteor version supports --server-only"
+set +e
+HAS_SERVER_ONLY=`HOME=$METEOR_DIR $METEOR help build | grep -e '--server-only'`
+set -e
+if [ -n "$HAS_SERVER_ONLY" ] ; then
+  SERVER_ONLY_FLAG='--server-only'
+else
+  SERVER_ONLY_FLAG=""
+fi
+# Remove the Android platform if we don't support the --server-only flag.  iOS
+# platform gets ignored properly.
+if [ -z "$SERVER_ONLY_FLAG" ]; then
+  echo "-----> Attempting to remove android platform."
+  HOME=$METEOR_DIR $METEOR remove-platform android || true
+  echo "-----> Moving on."
+fi
+
+# Identify the npm/node to use. While we could use `meteor node` and `meteor
+# npm` to execute these directly, to use them in prod, we'd need to copy the
+# meteor world into the built slug, and that's too large (Issue #125).
+# Instead, search for the binaries within meteor, and copy them into our built
+# slug.
+
+METEOR_NPM=`find $METEOR_DIR -wholename "*/dev_bundle/bin/npm"`
+METEOR_NODE=`find $METEOR_DIR -wholename "*/dev_bundle/bin/node"`
+# Trim whitespace
+METEOR_NPM=`echo "$METEOR_NPM" | sed -e 's/[[:space:]]*$//'`
+METEOR_NODE=`echo "$METEOR_NODE" | sed -e 's/[[:space:]]*$//'`
+if [ -z "$METEOR_NPM" ] || [ -z "$METEOR_NODE" ] ; then
+  echo "FATAL: Can't find npm/node within meteor bundle. This is a bug. Please open an issue at https://github.com/AdmitHub/meteor-buildpack-horse.";
+  exit 1
+fi
+
+# Copy node into place for production.
+NODE="$COMPILE_DIR"/bin/node
+cp "$METEOR_NODE" "$NODE"
+chmod a+x "$NODE"
+
+# Add npm and node path so that 1.4's npm-rebuild.js will function.
+PATH="$METEOR_DIR/.meteor:`dirname $METEOR_NPM`:$COMPILE_DIR/bin:$PATH"
+
+echo "-----> Using node: `$NODE --version`"
+echo "----->    and npm: `$METEOR_NPM --version`"
+
+# If we use npm on root, run npm install.
+if [ -e "$APP_SOURCE_DIR"/package.json ]; then
+  $METEOR_NPM install --production
+fi
+
+# Related to https://github.com/meteor/meteor/issues/2796 and
+# https://github.com/meteor/meteor/issues/2606.  Some packages only build their
+# assets at runtime, and thus they are not available for bundling unless meteor
+# has been launched.  To opt-in to this, set BUILDPACK_PRELAUNCH_METEOR=1.
+if [ -n "${BUILDPACK_PRELAUNCH_METEOR+1}" ]; then
+  echo "-----> BUILDPACK_PRELAUNCH_METEOR: Pre-launching meteor to build packages assets"
+  # Remove the Android platform because it fails due to the Android tools not
+  # being installed, but leave the iOS platform because it's ignored.
+  HOME=$METEOR_DIR $METEOR remove-platform android || true
+  HOME=$METEOR_DIR timeout -s9 60 $METEOR --settings settings.json || true
+fi
+
+# Now on to bundling. Don't put the bundle in $APP_CHECKOUT_DIR during
+# bundling, or it will recurse, trying to bundle up its own bundling.
+
+echo "-----> Building Meteor app with ROOT_URL: $ROOT_URL"
+BUNDLE_DEST=`mktemp -d "$BUILDPACK_DIR/build-XXXX"`
+
+# The actual invocation of `meteor build`!
+HOME=$METEOR_DIR $METEOR build $BUILD_OPTIONS --server $ROOT_URL $SERVER_ONLY_FLAG --directory $BUNDLE_DEST
+
+echo "-----> Moving built slug to $COMPILE_DIR/app"
+mv $BUNDLE_DEST/bundle "$COMPILE_DIR/app"
+rmdir $BUNDLE_DEST
+
+# Run npm install on the built slug; only for `--production` dependencies.
+echo "-----> Installing npm production dependencies on built slug"
+if [ -e "$COMPILE_DIR"/app/programs/server/package.json ]; then
+  cd "$COMPILE_DIR"/app/programs/server
+  $METEOR_NPM install --production
+  cd "$APP_SOURCE_DIR"
+fi
+
+#
+# Environment
+#
+# Add an export of PATH which includes our compile dir, etc.
+echo "-----> Adding PATH environment"
+mkdir -p "$APP_CHECKOUT_DIR"/.profile.d
+cat > "$APP_CHECKOUT_DIR"/.profile.d/path.sh <<EOF
+  #!/bin/sh
+  export PATH=\$HOME/$COMPILE_DIR_SUFFIX/bin:\$PATH
+  export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$HOME/$COMPILE_DIR_SUFFIX/lib
+EOF
+
+#
+# Extras
+#
+
+# source scripts in 'extra' dir, if any.  Create them for custom stuff like
+# binary dependencies, additional environment settings, etc.
+echo "-----> Running extras"
+for file in `ls "$BUILDPACK_DIR"/extra | sort`; do
+  . "$BUILDPACK_DIR"/extra/$file
+done
