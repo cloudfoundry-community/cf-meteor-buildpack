@@ -28,7 +28,7 @@ install_node() {
   # Download node from Heroku's S3 mirror of nodejs.org/dist
   status "Downloading and installing node $node_version"
   NODE_INSTALLER=node-installer.tar.gz
-  NODE_URL="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
+  NODE_URL="https://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
   curl $NODE_URL > $NODE_INSTALLER
   tar xzf $NODE_INSTALLER -C $BUILD_DIR
 
